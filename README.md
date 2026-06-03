@@ -1,9 +1,8 @@
-# 🎨 تحدي تلوين الأعلام السحري (Coloriage Drapeaux Magique)
+# 🎨 تحدي تلوين الأعلام السحري (Flag Painter Kids)
 
 Une application web interactive, ludique et éducative permettant d'apprendre et de colorier les drapeaux du monde entier. Conçue avec une interface entièrement en arabe, elle est idéale pour les enfants, les étudiants et tous les passionnés de géographie !
 
-![Aperçu du jeu](https://via.placeholder.com/800x400?text=Aper%C3%A7u+de+l'Application+Coloriage+Drapeaux)
-*(Remplacez ce lien par une vraie capture d'écran de votre application)*
+![Aperçu du jeu](capture.png)
 
 ## ✨ Fonctionnalités Principales
 
@@ -13,6 +12,7 @@ Une application web interactive, ludique et éducative permettant d'apprendre et
 - **🎵 Effets sonores dynamiques :** Des retours sonores (clic, succès, erreur) sont générés en temps réel via la *Web Audio API* (sans nécessiter de fichiers audio externes).
 - **💡 Système d'indices visuels :** En cas de difficulté, le joueur peut afficher le vrai drapeau pendant 4 secondes.
 - **🎉 Animations de récompense :** Une pluie de confettis célèbre chaque réussite pour encourager l'apprentissage.
+- **📚 Enrichissement éducatif & Gamification :** Un système d'évaluation par étoiles (1 à 3) avec l'affichage de la capitale et d'une anecdote ("Le saviez-vous ?") pour chaque pays réussi.
 - **🏆 Système de score et progression :** Suivi en temps réel de l'avancement (barre de progression) et calcul du score.
 - **📱 Entièrement Responsive & Plein écran :** Jouable sur ordinateur, tablette et smartphone, avec un mode plein écran natif pour une immersion totale.
 
@@ -31,7 +31,7 @@ Ce projet est construit de manière native sans frameworks lourds, ce qui le ren
 ## 📂 Structure du Projet
 
 ```text
-📦 Coloriage drapeaux
+📦 flag-painter-kids
  ┣ 📜 coloriage-drapeaux.html  # Fichier principal contenant la structure, les données et la logique (ou séparé)
  ┣ 📜 data.js                  # Base de données externe contenant les objets drapeaux (noms, codes, palettes, SVGs)
  ┣ 📜 style.css                # Feuille de style principale (UI, layout, animations)
@@ -44,11 +44,11 @@ Aucune installation serveur ou base de données n'est requise. C'est une applica
 
 1. **Cloner le dépôt :**
    ```bash
-   git clone https://github.com/votre-nom-utilisateur/coloriage-drapeaux.git
+   git clone https://github.com/ayoubbenkhiroun/flag-painter-kids.git
    ```
 2. **Accéder au dossier :**
    ```bash
-   cd coloriage-drapeaux
+   cd flag-painter-kids
    ```
 3. **Lancer le jeu :**
    Double-cliquez simplement sur le fichier `coloriage-drapeaux.html` pour l'ouvrir dans votre navigateur web préféré (Chrome, Firefox, Edge, Safari recommandés pour une compatibilité parfaite avec la synthèse vocale).
@@ -74,14 +74,11 @@ Les contributions sont les bienvenues ! Que ce soit pour ajouter de nouveaux dra
 
 ## 📝 Recommandations de développement futur
 
-- Séparer totalement les données (`data.js`) du fichier HTML principal si ce n'est pas encore finalisé.
 - Ajouter un écran d'accueil (Menu principal) et un écran de fin.
 - Sauvegarder le meilleur score dans le `localStorage` du navigateur.
 - Ajouter des catégories (Par continent, niveau de difficulté).
 - **Transformer en PWA (Progressive Web App) :** Ajouter un `manifest.json` et un *Service Worker* pour permettre l'installation sur mobile et le jeu hors-ligne.
 - **Accessibilité (Mode Daltonien) :** Ajouter des infobulles textuelles ou des motifs sur les couleurs de la palette.
-- **Enrichissement éducatif :** Afficher la capitale, une anecdote amusante et la localisation sur une carte après chaque victoire.
-- **Gamification :** Ajouter un système de récompense (1 à 3 étoiles basé sur le nombre d'erreurs) ou un mode "Contre-la-montre".
 
 ## 📄 Licence
 
