@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎨 تحدي تلوين الأعلام السحري</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-title">🎨 مغامرة تلوين الأعلام الذكية</div>
+  <div style="display: flex; gap: 10px; align-items: center;">
+    <div class="score-box">النقاط: <span id="score-val">0</span> ⭐</div>
+    <button class="action-btn btn-fullscreen" onclick="toggleFullScreen()" style="padding: 6px 14px; font-size: 18px; margin: 0; box-shadow: 0 4px 0 #5A3BAA;" title="شاشة كاملة">📺</button>
+  </div>
+</header>
+
+<div id="game-container">
+  <div id="progress-container">
+    <div id="progress-text">العلم 1 من 10</div>
+    <div class="progress-track"><div id="progress-fill"></div></div>
+  </div>
+
+  <div id="consigne" class="consigne"></div>
+  
+  <div id="flag-svg-container">
+    </div>
+
+  <div class="color-palette" id="color-palette">
+    </div>
+
+  <div class="btn-group">
+    <button class="action-btn btn-skip" onclick="skipFlag()">⏭️ تغيير العلم</button>
+    <button class="action-btn btn-hint" onclick="showHint()">💡 مساعدة</button>
+    <button class="action-btn btn-validate" onclick="checkFlagColors()">تأكيد العلم ✔️</button>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- Fenêtre modale de victoire -->
+<div id="victory-modal" class="modal-overlay">
+  <div class="modal-content">
+    <h2 id="modal-title">أحسنت! عمل رائع 🎉</h2>
+    <div class="stars-container" id="modal-stars"></div>
+    <div class="info-box">
+      <p><span class="icon">🏛️</span> <strong>العاصمة:</strong> <span id="modal-capital"></span></p>
+      <p><span class="icon">💡</span> <strong>هل تعلم؟</strong> <span id="modal-fact"></span></p>
+    </div>
+    <button class="action-btn btn-validate" onclick="closeVictoryModalAndNext()" style="width: 100%; justify-content: center;">العلم التالي ⏭️</button>
+  </div>
+</div>
+
+<script src="data.js"></script>
+<script>
+// الأعلام مع تحديد دقيق للأجزاء والألوان الرسمية هكس
+
+
+let currentFlagIdx = 0;
+let selectedColor = null;
+let score = 0;
+let audioCtx = null;
+let errorsCount = 0;
+let hintUsed = false;
+
+// دالة عرض الرسائل المخصصة بدلاً من alert
+function showMessage(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  
+  // إزالة الرسالة بعد 3 ثوانٍ
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
+}
+
+// تشغيل اللعبة
+function initGame() {
+  const flag = FLAGS_DATA[currentFlagIdx];
+  selectedColor = null;
+  errorsCount = 0;
+  hintUsed = false;
+  
+  // استخراج اسم البلد فقط بدون الرموز التعبيرية (الإيموجي) لكي ينطقه المساعد الصوتي بوضوح
+  const countryNameOnly = flag.name.replace(/[^\u0600-\u06FF\s]/g, '').trim();
+  
+  // تحديث التعليمة لتشمل العلم الصغير وزر النطق الصوتي
+  document.getElementById('consigne').innerHTML = `
+    <div style="display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;">
+      <span>لوّن علم ${flag.name} بالألوان الصحيحة!</span>
+      <img src="https://flagcdn.com/w40/${flag.code}.png" alt="علم" style="height: 32px; border-radius: 4px; box-shadow: 0 2px 5px rgba(0,0,0,0.15);">
+      <button onclick="speakCountryName('${countryNameOnly}')" style="background: var(--accent); border: 2px solid #F39C12; border-radius: 50%; width: 40px; height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 0 #D68910; transition: transform 0.2s;" title="استمع لاسم البلد" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">🔊</button>
+    </div>
+  `;
+  
+  // Remplace le blanc cassé par défaut par un gris clair (#D3D3D3) pour les zones non coloriées
+  document.getElementById('flag-svg-container').innerHTML = flag.svg.replace(/fill="#F5F6FA"/g, 'fill="#D3D3D3"');
+  
+  // تحديث شريط التقدم
+  const currentNum = currentFlagIdx + 1;
+  document.getElementById('progress-text').textContent = `العلم ${currentNum} من ${FLAGS_DATA.length}`;
+  document.getElementById('progress-fill').style.width = `${(currentNum / FLAGS_DATA.length) * 100}%`;
+
+  // توليد لوحة الألوان الشاملة الخلط العشوائي
+  const shuffledPalette = [...flag.palette].sort(() => Math.random() - 0.5);
+  const paletteContainer = document.getElementById('color-palette');
+  paletteContainer.innerHTML = shuffledPalette.map(color => `
+    <div class="color-btn" style="background-color: ${color};" onclick="selectColor(this, '${color}')"></div>
+  `).join('');
+  
+  // تفعيل حدث الضغط على أجزاء العلم للتلوين الرقمي
+  setTimeout(() => {
+    document.querySelectorAll('.flag-part').forEach(part => {
+      part.onclick = function() {
+        if (!selectedColor) {
+          playAudioSound(150, 'triangle', 0.1);
+          showMessage('اختر لوناً من الدوائر في الأسفل أولاً! 🎨', 'info');
+          return;
+        }
+        playAudioSound(400, 'sine', 0.05);
+        this.setAttribute('fill', selectedColor);
+        this.style.stroke = selectedColor; // جعل الحدود متناسقة
+        checkFlagColors(true); // فحص تلقائي بعد كل تلوين
+      }
+    });
+  }, 100);
+}
+
+// تخطي / تغيير العلم
+function skipFlag() {
+  currentFlagIdx = (currentFlagIdx + 1) % FLAGS_DATA.length;
+  initGame();
+}
+
+// تحديد اللون النشط من اللوحة
+function selectColor(btn, color) {
+  playAudioSound(600, 'sine', 0.05);
+  document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedColor = color;
+}
+
+// فحص دقة وصحة التلوين
+function checkFlagColors(autoCheck = false) {
+  const flag = FLAGS_DATA[currentFlagIdx];
+  let isAllCorrect = true;
+  
+  flag.parts.forEach(p => {
+    const element = document.getElementById(p.id);
+    if (!element || element.getAttribute('fill').toUpperCase() !== p.correct.toUpperCase()) {
+      isAllCorrect = false;
+    }
+  });
+  
+  if (isAllCorrect) {
+    // حساب النجوم: نبدأ بـ 3، ونخصم بناءً على الأخطاء أو استخدام المساعدة
+    let stars = 3;
+    if (hintUsed) stars -= 1;
+    if (errorsCount >= 1 && errorsCount <= 2) stars -= 1;
+    else if (errorsCount >= 3) stars -= 2;
+    stars = Math.max(1, stars); // نجمة واحدة على الأقل للتشجيع
+
+    playAudioSound(523, 'sine', 0.2);
+    setTimeout(() => playAudioSound(1046, 'sine', 0.3), 150);
+    triggerConfetti();
+    score += (stars * 10); // زيادة النقاط حسب عدد النجوم (10, 20 أو 30)
+    document.getElementById('score-val').textContent = score;
+    
+    showVictoryModal(stars, flag);
+  } else if (!autoCheck) {
+    errorsCount++; // تسجيل خطأ عند التلوين بلون خاطئ
+    playAudioSound(220, 'sawtooth', 0.3);
+    const container = document.getElementById('flag-svg-container');
+    container.style.animation = 'shake 0.4s';
+    setTimeout(() => container.style.animation = '', 400);
+    showMessage('هممم، هناك بعض الألوان في غير مكانها الصحيح. ركز وحاول مجدداً! 🤔', 'error');
+  }
+}
+
+// إظهار نافذة الانتصار والمعلومات الإضافية
+function showVictoryModal(stars, flag) {
+  const modal = document.getElementById('victory-modal');
+  const starsContainer = document.getElementById('modal-stars');
+  
+  starsContainer.innerHTML = '';
+  for (let i = 1; i <= 3; i++) {
+    // إضافة الكلاس "filled" بناءً على النجوم المحصل عليها
+    starsContainer.innerHTML += `<span class="star ${i <= stars ? 'filled' : ''}">⭐</span>`;
+  }
+  
+  document.getElementById('modal-capital').textContent = flag.capital || 'غير متوفرة حالياً';
+  document.getElementById('modal-fact').textContent = flag.fact || 'هل تعلم أن كل علم يروي قصة فريدة عن تاريخ وثقافة شعبه؟';
+  
+  modal.style.display = 'flex';
+}
+
+// إغلاق النافذة والانتقال للعلم التالي
+function closeVictoryModalAndNext() {
+  document.getElementById('victory-modal').style.display = 'none';
+  currentFlagIdx = (currentFlagIdx + 1) % FLAGS_DATA.length;
+  initGame();
+}
+
+// عرض المساعدة البصرية المؤقتة
+function showHint() {
+  hintUsed = true; // تسجيل استخدام المساعدة
+  playAudioSound(450, 'sine', 0.08);
+  let hint = document.getElementById('flag-hint');
+  if (hint) return; // معروض بالفعل
+  
+  const flag = FLAGS_DATA[currentFlagIdx];
+  hint = document.createElement('div');
+  hint.id = 'flag-hint';
+  hint.innerHTML = `<img src="https://flagcdn.com/w160/${flag.code}.png" alt="Hint">`;
+  document.getElementById('flag-svg-container').appendChild(hint);
+  
+  // إخفاء تلقائي بعد 4 ثوانٍ لحفظ التحدي للمستخدم
+  setTimeout(() => { if (hint) hint.remove(); }, 4000);
+}
+
+// التحكم في وضع الشاشة الكاملة للمتصفح المباشر
+function toggleFullScreen() {
+  playAudioSound(300, 'sine', 0.05);
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(err => {
+      showMessage('عذراً، لم نتمكن من تفعيل الشاشة الكاملة على هذا المتصفح.', 'error');
+    });
+  } else {
+    document.exitFullscreen();
+  }
+}
+
+// نطق اسم البلد باستخدام SpeechSynthesis API المدمجة في المتصفح
+function speakCountryName(text) {
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel(); // إيقاف أي نطق سابق
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'ar-SA'; // نطق باللغة العربية
+    utterance.rate = 0.85; // إبطاء الصوت قليلاً ليكون أوضح للأطفال
+    window.speechSynthesis.speak(utterance);
+  } else {
+    showMessage('عذراً، متصفحك لا يدعم خاصية النطق الصوتي.', 'error');
+  }
+}
+
+// نظام توليد المؤثرات الصوتية البسيطة والذكية
+function playAudioSound(freq, type, duration) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) { console.log("Audio not supported yet"); }
+}
+
+// نافورة قصاصات الورق الملونة عند النجاح والتفوق
+function triggerConfetti() {
+  const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#2ECC71', '#9B59B6'];
+  for (let i = 0; i < 40; i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = Math.random() * 100 + 'vw';
+    c.style.top = '-10px';
+    c.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    c.style.width = Math.random() * 8 + 6 + 'px';
+    c.style.height = Math.random() * 12 + 6 + 'px';
+    c.style.animationDuration = Math.random() * 1.5 + 1.5 + 's';
+    document.body.appendChild(c);
+    setTimeout(() => c.remove(), 3000);
+  }
+}
+
+// بدء التشغيل الفوري عند التحميل بالكامل
+window.onload = initGame;
+</script>
+
+</body>
+</html>
